@@ -23,12 +23,12 @@ object Factor {
    * @param next the next function to use for this actor.
    * @param state the updated state to use for the next time the actor processes a message.
    */
-  case class Ok[T](next: Factor[T], state: T) extends Result[T]
+  case class Ok[T](state: T, next: Option[Factor[T]] = None) extends Result[T]
   /**
    * Return this from an actor to reply to whichever actor sent the initial message.
    * @param reply the message to send back to the calling actor.
    */
-  case class Reply[T](next: Factor[T], reply: Any, state: T) extends Result[T]
+  case class Reply[T](reply: Any, state: T, next: Option[Factor[T]] = None) extends Result[T]
   /**
    * Indicates a crashed actor.  DERP.
    */
@@ -68,7 +68,6 @@ case class FactorPid[T](initFunc: Factor.Factor[T], init: T, sys: FactorSystem) 
     case null => true
     case (msg, sender) => process(msg, sender) match {
       case Some((f, s)) =>
-	println(s"got back ${f} ${s}")
 	nextFunc = f
 	state = s
 	true
@@ -86,10 +85,14 @@ case class FactorPid[T](initFunc: Factor.Factor[T], init: T, sys: FactorSystem) 
    */
   private def process(msg: Any, sender: Option[FactorPid[_]]): Option[(Factor[T], T)] = try {
     nextFunc((msg, Context(this, sys), state)) match {
-      case Ok(n, s) => Some((n, s))
-      case Reply(n, r, s) =>
+      case Ok(s, Some(n)) => Some((n, s))
+      case Ok(s, None) => Some((nextFunc, s))
+      case Reply(r, s, Some(n)) =>
 	sender map (s => s ! r)
 	Some((n, s))
+      case Reply(r, s, None) =>
+	sender map (s => s ! r)
+	Some((nextFunc, s))
       case Stop(r, s) =>
 	//TODO:  handle links
 	println(s"Stopping pid, reason ${r} with state ${s}")

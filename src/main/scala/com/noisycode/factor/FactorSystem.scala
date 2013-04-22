@@ -17,7 +17,7 @@ class FactorSystem {
    */
   type ActorQueue = List[FactorPid[_]]
 
-  private var actors: ActorQueue = List()
+  private [factor] var actors: ActorQueue = List()
 
   /**
    * Create a new actor.

@@ -14,7 +14,7 @@ class SingleFactorTest extends FunSpec with GivenWhenThen {
       lazy val f: Factor.Factor[Int] = {
 	case ('step, _, 0) => 
 	  println("Got one")
-	  Factor.Ok(f, 1)
+	  Factor.Ok(state = 1)
       }
       val pid = sys.spawn(f, 0)
 
